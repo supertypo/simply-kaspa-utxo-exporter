@@ -1,0 +1,28 @@
+[package]
+name = "simply-kaspa-utxo-indexer"
+description = "Simply Kaspa UTXO Indexer"
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+edition.workspace = true
+
+[features]
+default = []
+
+[dependencies]
+simply-kaspa-utxo-indexer-cli.workspace = true
+simply-kaspa-utxo-indexer-database.workspace = true
+kaspa-wrpc-client.workspace = true
+kaspa-utils.workspace = true
+kaspa-consensus.workspace = true
+kaspa-txscript.workspace = true
+kaspa-addresses.workspace = true
+kaspa-database.workspace = true
+kaspa-consensus-core.workspace = true
+rocksdb.workspace = true
+tokio.workspace = true
+chrono.workspace = true
+env_logger.workspace = true
+log.workspace = true
+clap.workspace = true
+humantime.workspace = true
