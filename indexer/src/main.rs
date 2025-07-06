@@ -84,6 +84,7 @@ async fn main() {
                 Ok((tiers, top_scripts)) => {
                     commit_to_db_with_retry(cli_args.clone(), &tiers, &top_scripts).await;
                     last_run_ms = start_time_ms;
+                    info!("Finished reading tiers and top scripts, waiting until next interval ({}m)", cli_args.interval_minutes);
                 }
                 Err(e) => {
                     if !run.load(Ordering::Relaxed) {
@@ -93,8 +94,6 @@ async fn main() {
                     sleep(Duration::from_secs(cli_args.data_dir_retry_interval - 3)).await;
                 }
             };
-        } else {
-            debug!("Time passed since last run: {}", format_duration(last_run_delta.to_std().unwrap()));
         }
         sleep(Duration::from_secs(3)).await;
     }
