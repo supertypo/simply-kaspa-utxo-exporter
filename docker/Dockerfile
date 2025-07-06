@@ -7,11 +7,9 @@ ARG REPO_DIR=.
 
 RUN apk --no-cache add \
   musl-dev \
-  protobuf-dev \
   g++ \
   clang15-dev \
   linux-headers \
-  wasm-pack \
   openssl-dev \
   postgresql-dev \
   curl
@@ -24,13 +22,11 @@ ENV RUSTFLAGS="-C target-feature=-crt-static -C link-args=-s" \
 # Cache dependencies
 COPY "$REPO_DIR"/Cargo.toml "$REPO_DIR"/Cargo.lock ./
 COPY "$REPO_DIR"/cli/Cargo.toml ./cli/
-COPY "$REPO_DIR"/kaspad/Cargo.toml ./kaspad/
 COPY "$REPO_DIR"/database/Cargo.toml ./database/
 COPY "$REPO_DIR"/indexer/Cargo.toml ./indexer/
-RUN mkdir cli/src kaspad/src database/src indexer/src && \
+RUN mkdir cli/src database/src indexer/src && \
     echo "fn main() {}" > cli/build.rs && \
     echo "pub fn placeholder() {}" > cli/src/lib.rs && \
-    echo "pub fn placeholder() {}" > kaspad/src/lib.rs && \
     echo "pub fn placeholder() {}" > database/src/lib.rs && \
     echo "pub fn placeholder() {}" > indexer/src/lib.rs && \
     echo "fn main() {}" > indexer/src/main.rs && \

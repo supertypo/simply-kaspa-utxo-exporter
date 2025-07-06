@@ -24,13 +24,13 @@ edition = "2021"
 [workspace.dependencies]
 simply-kaspa-utxo-indexer-cli = { path = "cli" }
 simply-kaspa-utxo-indexer-database = { path = "database" }
-kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
-kaspa-database = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
-kaspa-consensus = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
-kaspa-utils = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
-kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
-kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
-kaspa-addresses = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.0" }
+kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
+kaspa-database = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
+kaspa-consensus = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
+kaspa-utils = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
+kaspa-consensus-core = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
+kaspa-txscript = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
+kaspa-addresses = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
 rocksdb = "0.22.0"
 tokio = { version = "1.45.1", features = ["default", "signal"] }
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "runtime-tokio-native-tls", "postgres"] }
