@@ -29,8 +29,12 @@ RUN mkdir cli/src database/src indexer/src && \
     echo "pub fn placeholder() {}" > cli/src/lib.rs && \
     echo "pub fn placeholder() {}" > database/src/lib.rs && \
     echo "pub fn placeholder() {}" > indexer/src/lib.rs && \
-    echo "fn main() {}" > indexer/src/main.rs && \
-    cargo build --release
+    echo "fn main() {}" > indexer/src/main.rs
+
+RUN cargo fetch
+# Patch missing include in librocksdb-sys-0.16.0+8.10.0
+RUN sed -i '1i #include <cstdint>' $(find /usr/local/cargo/registry/src/ -path "*/librocksdb-sys-0.16.0+8.10.0/*/offpeak_time_info.h")
+RUN cargo build --release
 
 COPY "$REPO_DIR" .
 RUN find . -type f \( -name build.rs -or -name lib.rs -or -name main.rs \) -exec touch {} +
@@ -47,7 +51,6 @@ RUN apk --no-cache add \
   postgresql-client
 
 COPY --from=builder /work/target/release/simply-kaspa-utxo-indexer /usr/local/bin/
-RUN ln -s /usr/local/bin/simply-kaspa-utxo-indexer /usr/local/bin/kaspa-db-filler-ng
 
 USER 13337:13337
 
