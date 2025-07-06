@@ -86,6 +86,9 @@ async fn main() {
                     last_run_ms = start_time_ms;
                 }
                 Err(e) => {
+                    if !run.load(Ordering::Relaxed) {
+                        break;
+                    }
                     error!("Failed to read tiers and top scripts, retrying in {} seconds: {e}", cli_args.data_dir_retry_interval);
                     sleep(Duration::from_secs(cli_args.data_dir_retry_interval - 3)).await;
                 }
@@ -145,7 +148,7 @@ fn read_tiers_and_top_scripts(
             }
         }
         if !run.load(Ordering::Relaxed) {
-            return Err(StoreError::DataInconsistency("Aborting".to_string()).into());
+            return Err(StoreError::DataInconsistency("Shutting down".to_string()).into());
         }
     }
 
@@ -223,7 +226,7 @@ fn read_script_amounts(
             );
         }
         if !run.load(Ordering::Relaxed) {
-            return Err(StoreError::DataInconsistency("Aborting".to_string()).into());
+            return Err(StoreError::DataInconsistency("Shutting down".to_string()).into());
         }
     }
     info!(
