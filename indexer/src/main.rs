@@ -168,13 +168,13 @@ fn read_tiers_and_top_scripts(
         .into_iter()
         .enumerate()
         .map(|(idx, Reverse((amount, spk)))| {
+            let amount_kas = amount / SOMPI_PER_KASPA;
             if idx < 10 {
                 let prefix = kaspa_addresses::Prefix::from(network_id);
                 let address = extract_script_pub_key_address(&ScriptPublicKey::from_vec(0, spk.clone()), prefix).unwrap();
-                let amount_kas = amount / SOMPI_PER_KASPA;
                 info!("Top {} address: {address}, total: {amount_kas} KAS", idx + 1);
             }
-            TopScript { rank: idx as i16, timestamp: start_time_ms, script_public_key: spk, amount: amount as i64 }
+            TopScript { rank: idx as i16, timestamp: start_time_ms, script_public_key: spk, amount: amount_kas as i64 }
         })
         .collect();
 
