@@ -17,7 +17,7 @@ pub struct KaspaDbClient {
 
 impl KaspaDbClient {
     pub async fn new(url: &str) -> Result<KaspaDbClient, Error> {
-        Self::new_with_args(url, 10).await
+        Self::new_with_args(url, 1).await
     }
 
     pub async fn new_with_args(url: &str, pool_size: u32) -> Result<KaspaDbClient, Error> {
@@ -36,6 +36,10 @@ impl KaspaDbClient {
     pub async fn close(&mut self) -> Result<(), Error> {
         self.pool.close().await;
         Ok(())
+    }
+
+    pub async fn empty_tables(&self) -> Result<(), Error> {
+        query::create::empty_tables(&self.pool).await
     }
 
     pub async fn create_tables(&self) -> Result<(), Error> {

@@ -1,24 +1,26 @@
 use sqlx::{Error, Pool, Postgres};
 
+pub async fn empty_tables(pool: &Pool<Postgres>) -> Result<(), Error> {
+    empty_table(pool, "distribution_tiers").await?;
+    empty_table(pool, "top_scripts").await?;
+    Ok(())
+}
+
 pub async fn create_tables(pool: &Pool<Postgres>) -> Result<(), Error> {
     create_distribution_tiers(pool).await?;
     create_top_scripts(pool).await?;
     Ok(())
 }
 
-async fn create_distribution_tiers(pool: &Pool<Postgres>) -> Result<(), Error> {
-    let exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-            AND table_name = 'distribution_tiers'
-        )",
-    )
-    .fetch_one(pool)
-    .await?;
+async fn empty_table(pool: &Pool<Postgres>, name: &str) -> Result<(), Error> {
+    if table_exists(pool, name).await? {
+        sqlx::query(format!("DELETE FROM {name})").as_str()).execute(pool).await?;
+    }
+    Ok(())
+}
 
-    if !exists {
+async fn create_distribution_tiers(pool: &Pool<Postgres>) -> Result<(), Error> {
+    if !table_exists(pool, "distribution_tiers").await? {
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS distribution_tiers (
                 timestamp BIGINT,
@@ -35,18 +37,7 @@ async fn create_distribution_tiers(pool: &Pool<Postgres>) -> Result<(), Error> {
 }
 
 async fn create_top_scripts(pool: &Pool<Postgres>) -> Result<(), Error> {
-    let exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-            AND table_name = 'top_scripts'
-        )",
-    )
-    .fetch_one(pool)
-    .await?;
-
-    if !exists {
+    if !table_exists(pool, "top_scripts").await? {
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS top_scripts (
                 timestamp BIGINT,
@@ -60,4 +51,21 @@ async fn create_top_scripts(pool: &Pool<Postgres>) -> Result<(), Error> {
         .await?;
     }
     Ok(())
+}
+
+async fn table_exists(pool: &Pool<Postgres>, name: &str) -> Result<bool, Error> {
+    let exists: bool = sqlx::query_scalar(
+        format!(
+            "SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_name = '{name}'
+            )",
+        )
+        .as_str(),
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(exists)
 }

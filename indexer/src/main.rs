@@ -61,6 +61,11 @@ async fn main() {
                 if let Err(e) = db.create_tables().await {
                     panic!("Failed to create tables for {url}: {e}")
                 };
+                if cli_args.initialize_db {
+                    if let Err(e) = db.empty_tables().await {
+                        panic!("Failed to empty tables for {url}: {e}")
+                    };
+                }
                 if last_run_ms == 0 {
                     match db.select_last_distribution_tier().await {
                         Ok(v) => last_run_ms = v,
