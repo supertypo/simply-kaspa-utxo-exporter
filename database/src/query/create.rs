@@ -14,7 +14,7 @@ pub async fn create_tables(pool: &Pool<Postgres>) -> Result<(), Error> {
 
 async fn empty_table(pool: &Pool<Postgres>, name: &str) -> Result<(), Error> {
     if table_exists(pool, name).await? {
-        sqlx::query(format!("DELETE FROM {name})").as_str()).execute(pool).await?;
+        sqlx::query(format!("DELETE FROM {name}").as_str()).execute(pool).await?;
     }
     Ok(())
 }
