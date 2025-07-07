@@ -27,7 +27,7 @@ pub struct CliArgs {
     pub db_retry_interval: u16,
     #[clap(long, default_value = "20", help = "How many times to retry commit to db before continuing")]
     pub db_retry_count: u16,
-    #[clap(short, long, help = "Empties the tables. Use with care")]
+    #[clap(short = 'c', long, help = "Empties the tables. Use with care")]
     pub initialize_db: bool,
     #[clap(short, long, default_value = "info", help = "error, warn, info, debug, trace, off")]
     pub log_level: String,
