@@ -31,11 +31,11 @@ use tokio::time::sleep;
 #[tokio::main]
 async fn main() {
     println!();
-    println!("***********************************************************");
+    println!("************************************************************");
     println!("**************** Simply Kaspa UTXO Exporter ****************");
-    println!("-----------------------------------------------------------");
+    println!("------------------------------------------------------------");
     println!("- https://github.com/supertypo/simply-kaspa-utxo-exporter/ -");
-    println!("-----------------------------------------------------------");
+    println!("------------------------------------------------------------");
     let cli_args = CliArgs::parse();
 
     env::set_var("RUST_LOG", &cli_args.log_level);
