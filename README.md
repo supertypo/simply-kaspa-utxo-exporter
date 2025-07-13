@@ -10,6 +10,10 @@ In case of failure to read from Kaspad (or writing to Postgres), it will retry u
 Docker images are available from https://hub.docker.com/r/supertypo/simply-kaspa-utxo-exporter
 
 
+## Contribute to development
+kaspa:qrjtsnnpjyvlmkffdqyayrny3qyen9yjkpuw7xvhsz36n69wmrfdyf3nwv67t
+
+
 ## Help
 ```
 Usage: simply-kaspa-utxo-exporter [OPTIONS]

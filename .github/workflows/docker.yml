@@ -99,7 +99,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        if: github.event_name != 'release'
+        if: github.event_name != 'release' || github.event.release.prerelease == true
         uses: docker/metadata-action@v5
         with:
           images: |
@@ -111,9 +111,9 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
 
-      - name: Docker meta
+      - name: Docker meta - release
         id: meta_release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' && github.event.release.prerelease == false
         uses: docker/metadata-action@v5
         with:
           images: |
@@ -131,11 +131,23 @@ jobs:
             $(printf '${{ vars.DOCKER_REPO }}@sha256:%s ' *)
 
       - name: Inspect image
-        if: github.event_name != 'release'
+        if: github.event_name != 'release' || github.event.release.prerelease == true
         run: |
           docker buildx imagetools inspect ${{ vars.DOCKER_REPO }}:${{ steps.meta.outputs.version }}
 
       - name: Inspect image release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' && github.event.release.prerelease == false
         run: |
           docker buildx imagetools inspect ${{ vars.DOCKER_REPO }}:${{ steps.meta_release.outputs.version }}
+
+      - name: Create Docker image reference file
+        if: github.event_name == 'release'
+        run: echo "${{ vars.DOCKER_REPO }}:${{ github.event.release.tag_name }}" > docker-image.txt
+
+      - name: Upload Docker image reference file
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: docker-image.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
