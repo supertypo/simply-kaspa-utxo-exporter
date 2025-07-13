@@ -11,11 +11,11 @@ use kaspa_wrpc_client::prelude::NetworkId;
 use log::{debug, error, info, trace, warn};
 use regex::Regex;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
-use simply_kaspa_utxo_indexer::signal::signal_handler::notify_on_signals;
-use simply_kaspa_utxo_indexer_cli::cli_args::CliArgs;
-use simply_kaspa_utxo_indexer_database::client::KaspaDbClient;
-use simply_kaspa_utxo_indexer_database::models::distribution_tier::DistributionTier;
-use simply_kaspa_utxo_indexer_database::models::top_script::TopScript;
+use simply_kaspa_utxo_exporter::signal::signal_handler::notify_on_signals;
+use simply_kaspa_utxo_exporter_cli::cli_args::CliArgs;
+use simply_kaspa_utxo_exporter_database::client::KaspaDbClient;
+use simply_kaspa_utxo_exporter_database::models::distribution_tier::DistributionTier;
+use simply_kaspa_utxo_exporter_database::models::top_script::TopScript;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use std::error::Error;
@@ -32,9 +32,9 @@ use tokio::time::sleep;
 async fn main() {
     println!();
     println!("***********************************************************");
-    println!("**************** Simply Kaspa UTXO Indexer ****************");
+    println!("**************** Simply Kaspa UTXO Exporter ****************");
     println!("-----------------------------------------------------------");
-    println!("- https://github.com/supertypo/simply-kaspa-utxo-indexer/ -");
+    println!("- https://github.com/supertypo/simply-kaspa-utxo-exporter/ -");
     println!("-----------------------------------------------------------");
     let cli_args = CliArgs::parse();
 
@@ -92,7 +92,15 @@ async fn main() {
             };
             match read_tiers_and_top_scripts(cli_args.clone(), run.clone(), network_id, db_path.clone(), start_time_ms) {
                 Ok((tiers, top_scripts)) => {
-                    commit_to_db_with_retry(cli_args.db_retry_count, dbs.clone(), &tiers, &top_scripts).await;
+                    commit_to_db_with_retry(
+                        run.clone(),
+                        cli_args.db_retry_count,
+                        cli_args.db_retry_interval,
+                        dbs.clone(),
+                        &tiers,
+                        &top_scripts,
+                    )
+                    .await;
                     last_run_ms = start_time_ms;
                     info!("Finished reading tiers and top scripts, waiting until next interval ({}m)", cli_args.interval_minutes);
                 }
@@ -101,7 +109,9 @@ async fn main() {
                         break;
                     }
                     error!("Failed to read tiers and top scripts, retrying in {} seconds: {e}", cli_args.data_dir_retry_interval);
-                    sleep(Duration::from_secs(cli_args.data_dir_retry_interval - 3)).await;
+                    if cli_args.data_dir_retry_interval > 3 {
+                        sleep(Duration::from_secs(cli_args.data_dir_retry_interval - 3)).await;
+                    }
                 }
             };
         }
@@ -130,17 +140,32 @@ fn get_db_path(base_dir: String, consensus_dir: Option<String>, network_id: Netw
     }
 }
 
-async fn commit_to_db_with_retry(db_retry_count: u16, dbs: Vec<KaspaDbClient>, tiers: &[DistributionTier], top_scripts: &[TopScript]) {
-    let max_tries = db_retry_count + 1;
+async fn commit_to_db_with_retry(
+    run: Arc<AtomicBool>,
+    db_retry_count: u16,
+    db_retry_interval: u64,
+    dbs: Vec<KaspaDbClient>,
+    tiers: &[DistributionTier],
+    top_scripts: &[TopScript],
+) {
     for db in dbs {
         debug!("Committing {} tiers and {} top scripts to {}", tiers.len(), top_scripts.len(), db.url_cleaned);
-        for attempt in 1..=max_tries {
+        for retry in 0..=db_retry_count {
             match commit_to_db(&db, tiers, top_scripts).await {
                 Ok(()) => {
                     info!("Committed {} tiers and {} top scripts to {}", tiers.len(), top_scripts.len(), db.url_cleaned);
                     break;
                 }
-                Err(e) => error!("Failed to commit results to {}, attempt {attempt}/{max_tries}: {e}", db.url_cleaned),
+                Err(e) => {
+                    let start_sleep_time = Instant::now();
+                    error!("Failed to commit results to {}, retry {retry}/{db_retry_count}: {e}", db.url_cleaned);
+                    while start_sleep_time.elapsed() < Duration::from_secs(db_retry_interval) {
+                        if !run.load(Ordering::Relaxed) {
+                            return;
+                        }
+                        sleep(Duration::from_secs(3)).await;
+                    }
+                }
             }
         }
     }

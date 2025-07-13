@@ -3759,7 +3759,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "simply-kaspa-utxo-indexer"
+name = "simply-kaspa-utxo-exporter"
 version = "0.0.0"
 dependencies = [
  "chrono",
@@ -3776,13 +3776,13 @@ dependencies = [
  "log",
  "regex",
  "rocksdb",
- "simply-kaspa-utxo-indexer-cli",
- "simply-kaspa-utxo-indexer-database",
+ "simply-kaspa-utxo-exporter-cli",
+ "simply-kaspa-utxo-exporter-database",
  "tokio",
 ]
 
 [[package]]
-name = "simply-kaspa-utxo-indexer-cli"
+name = "simply-kaspa-utxo-exporter-cli"
 version = "0.0.0"
 dependencies = [
  "clap",
@@ -3791,7 +3791,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "simply-kaspa-utxo-indexer-database"
+name = "simply-kaspa-utxo-exporter-database"
 version = "0.0.0"
 dependencies = [
  "itertools 0.14.0",

@@ -2,7 +2,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Clone, Debug, Serialize, Deserialize)]
-#[command(name = "simply-kaspa-utxo-indexer", version = env!("VERGEN_GIT_DESCRIBE"))]
+#[command(name = "simply-kaspa-utxo-exporter", version = env!("VERGEN_GIT_DESCRIBE"))]
 #[serde(rename_all = "camelCase")]
 pub struct CliArgs {
     #[clap(short, long, default_value = "mainnet", help = "The network type and suffix, e.g. 'testnet-10'")]
@@ -24,8 +24,8 @@ pub struct CliArgs {
     #[clap(long, default_value = "120", help = "Interval between datadir read retries (in seconds)")]
     pub data_dir_retry_interval: u64,
     #[clap(long, default_value = "30", help = "Interval between db retries (in seconds)")]
-    pub db_retry_interval: u16,
-    #[clap(long, default_value = "20", help = "How many times to retry commit to db before continuing")]
+    pub db_retry_interval: u64,
+    #[clap(long, default_value = "20", help = "How many times to retry commit to db before moving on")]
     pub db_retry_count: u16,
     #[clap(short = 'c', long, help = "Empties the tables. Use with care")]
     pub initialize_db: bool,

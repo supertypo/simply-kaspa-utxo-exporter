@@ -1,5 +1,5 @@
 [package]
-name = "simply-kaspa-utxo-indexer-cli"
+name = "simply-kaspa-utxo-exporter-cli"
 rust-version.workspace = true
 authors.workspace = true
 license-file.workspace = true
@@ -10,7 +10,7 @@ build = "build.rs"
 default = []
 
 [lib]
-name = "simply_kaspa_utxo_indexer_cli"
+name = "simply_kaspa_utxo_exporter_cli"
 crate-type = ["cdylib", "lib"]
 
 [build-dependencies]

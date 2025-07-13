@@ -1,5 +1,5 @@
 [package]
-name = "simply-kaspa-utxo-indexer-database"
+name = "simply-kaspa-utxo-exporter-database"
 rust-version.workspace = true
 authors.workspace = true
 license-file.workspace = true
@@ -9,7 +9,7 @@ edition.workspace = true
 default = []
 
 [lib]
-name = "simply_kaspa_utxo_indexer_database"
+name = "simply_kaspa_utxo_exporter_database"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]

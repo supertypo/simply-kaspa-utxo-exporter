@@ -1,8 +1,8 @@
 #!/bin/sh
 ARCHES="linux/amd64 linux/arm64"
 
-REPO_URL="https://github.com/supertypo/simply-kaspa-utxo-indexer"
-DOCKER_REPO="supertypo/simply-kaspa-utxo-indexer"
+REPO_URL="https://github.com/supertypo/simply-kaspa-utxo-exporter"
+DOCKER_REPO="supertypo/simply-kaspa-utxo-exporter"
 BUILD_DIR="$(dirname $0)"
 PUSH=$1
 VERSIONS=$2

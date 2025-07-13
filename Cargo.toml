@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "cli",
     "database",
-    "indexer"
+    "exporter"
 ]
 
 [profile.dev]
@@ -22,8 +22,8 @@ license-file = "LICENSE"
 edition = "2021"
 
 [workspace.dependencies]
-simply-kaspa-utxo-indexer-cli = { path = "cli" }
-simply-kaspa-utxo-indexer-database = { path = "database" }
+simply-kaspa-utxo-exporter-cli = { path = "cli" }
+simply-kaspa-utxo-exporter-database = { path = "database" }
 kaspa-wrpc-client = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
 kaspa-database = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }
 kaspa-consensus = { git = "https://github.com/kaspanet/rusty-kaspa.git", tag = "v1.0.1" }

@@ -1,6 +1,6 @@
 [package]
-name = "simply-kaspa-utxo-indexer"
-description = "Simply Kaspa UTXO Indexer"
+name = "simply-kaspa-utxo-exporter"
+description = "Simply Kaspa UTXO Exporter"
 rust-version.workspace = true
 authors.workspace = true
 license-file.workspace = true
@@ -10,8 +10,8 @@ edition.workspace = true
 default = []
 
 [dependencies]
-simply-kaspa-utxo-indexer-cli.workspace = true
-simply-kaspa-utxo-indexer-database.workspace = true
+simply-kaspa-utxo-exporter-cli.workspace = true
+simply-kaspa-utxo-exporter-database.workspace = true
 kaspa-wrpc-client.workspace = true
 kaspa-utils.workspace = true
 kaspa-consensus.workspace = true

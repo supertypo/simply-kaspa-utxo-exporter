@@ -23,13 +23,13 @@ ENV RUSTFLAGS="-C target-feature=-crt-static -C link-args=-s" \
 COPY "$REPO_DIR"/Cargo.toml "$REPO_DIR"/Cargo.lock ./
 COPY "$REPO_DIR"/cli/Cargo.toml ./cli/
 COPY "$REPO_DIR"/database/Cargo.toml ./database/
-COPY "$REPO_DIR"/indexer/Cargo.toml ./indexer/
-RUN mkdir cli/src database/src indexer/src && \
+COPY "$REPO_DIR"/exporter/Cargo.toml ./exporter/
+RUN mkdir cli/src database/src exporter/src && \
     echo "fn main() {}" > cli/build.rs && \
     echo "pub fn placeholder() {}" > cli/src/lib.rs && \
     echo "pub fn placeholder() {}" > database/src/lib.rs && \
-    echo "pub fn placeholder() {}" > indexer/src/lib.rs && \
-    echo "fn main() {}" > indexer/src/main.rs
+    echo "pub fn placeholder() {}" > exporter/src/lib.rs && \
+    echo "fn main() {}" > exporter/src/main.rs
 
 RUN cargo fetch
 # Patch missing include in librocksdb-sys-0.16.0+8.10.0
@@ -50,12 +50,12 @@ RUN apk --no-cache add \
   libstdc++ \
   postgresql-client
 
-COPY --from=builder /work/target/release/simply-kaspa-utxo-indexer /usr/local/bin/
+COPY --from=builder /work/target/release/simply-kaspa-utxo-exporter /usr/local/bin/
 
 USER 13337:13337
 
 ARG VERSION
 ENV VERSION=$VERSION
 
-ENTRYPOINT ["simply-kaspa-utxo-indexer"]
+ENTRYPOINT ["simply-kaspa-utxo-exporter"]
 CMD ["--help"]
