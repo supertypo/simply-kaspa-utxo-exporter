@@ -3774,6 +3774,7 @@ dependencies = [
  "kaspa-utils",
  "kaspa-wrpc-client",
  "log",
+ "regex",
  "rocksdb",
  "simply-kaspa-utxo-indexer-cli",
  "simply-kaspa-utxo-indexer-database",

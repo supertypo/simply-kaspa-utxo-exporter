@@ -8,7 +8,8 @@ use kaspa_consensus_core::tx::ScriptPublicKey;
 use kaspa_database::prelude::{StoreError, DB};
 use kaspa_txscript::extract_script_pub_key_address;
 use kaspa_wrpc_client::prelude::NetworkId;
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
+use regex::Regex;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
 use simply_kaspa_utxo_indexer::signal::signal_handler::notify_on_signals;
 use simply_kaspa_utxo_indexer_cli::cli_args::CliArgs;
@@ -17,13 +18,13 @@ use simply_kaspa_utxo_indexer_database::models::distribution_tier::DistributionT
 use simply_kaspa_utxo_indexer_database::models::top_script::TopScript;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
-use std::env;
 use std::error::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::{env, fs};
 use tokio::task;
 use tokio::time::sleep;
 
@@ -48,11 +49,6 @@ async fn main() {
     trace!("{:?}", cli_args);
 
     let network_id = NetworkId::from_str(&cli_args.network).unwrap();
-    let db_dir = PathBuf::from(cli_args.base_dir.clone())
-        .join(network_id.to_prefixed())
-        .join("datadir")
-        .join("consensus")
-        .join(cli_args.consensus_dir.clone());
 
     let mut last_run_ms = 0;
     for url in cli_args.database_url.clone() {
@@ -85,7 +81,14 @@ async fn main() {
         let last_run_delta = start_time.signed_duration_since(last_run);
         if last_run_delta >= TimeDelta::minutes(cli_args.interval_minutes as i64) {
             info!("Reading tiers and top scripts, time since last run: {}", format_duration(last_run_delta.to_std().unwrap()));
-            match read_tiers_and_top_scripts(cli_args.clone(), run.clone(), network_id, db_dir.clone(), start_time_ms) {
+            let db_path = match get_db_path(cli_args.base_dir.clone(), cli_args.consensus_dir.clone(), network_id) {
+                Ok(db_path) => db_path,
+                Err(e) => {
+                    warn!("Unable to locate consensus directory in {}: {}", cli_args.base_dir, e);
+                    continue;
+                }
+            };
+            match read_tiers_and_top_scripts(cli_args.clone(), run.clone(), network_id, db_path.clone(), start_time_ms) {
                 Ok((tiers, top_scripts)) => {
                     commit_to_db_with_retry(cli_args.clone(), &tiers, &top_scripts).await;
                     last_run_ms = start_time_ms;
@@ -101,6 +104,27 @@ async fn main() {
             };
         }
         sleep(Duration::from_secs(3)).await;
+    }
+}
+
+fn get_db_path(base_dir: String, consensus_dir: Option<String>, network_id: NetworkId) -> std::io::Result<PathBuf> {
+    let consensus_base_path = PathBuf::from(base_dir).join(network_id.to_prefixed()).join("datadir").join("consensus");
+
+    if let Some(consensus_dir) = consensus_dir {
+        let consensus_path = consensus_base_path.join(consensus_dir);
+        info!("Using specified consensus directory: {}", consensus_path.display());
+        Ok(consensus_path)
+    } else {
+        let re = Regex::new(r"^consensus-(\d+)$").unwrap();
+        let consensus_dir = fs::read_dir(&consensus_base_path)?
+            .filter_map(|e| e.ok())
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter(|name| re.is_match(name))
+            .max_by(|a, b| b.cmp(a))
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No matching consensus directory found"))?;
+        let consensus_path = consensus_base_path.join(consensus_dir);
+        info!("Using auto-detected consensus directory: {}", consensus_path.display());
+        Ok(consensus_path)
     }
 }
 
@@ -131,13 +155,13 @@ fn read_tiers_and_top_scripts(
     cli_args: CliArgs,
     run: Arc<AtomicBool>,
     network_id: NetworkId,
-    db_dir: PathBuf,
+    db_path: PathBuf,
     start_time_ms: i64,
 ) -> Result<(Vec<DistributionTier>, Vec<TopScript>), Box<dyn Error>> {
     let mut tiers = [(0u64, 0u64); 11]; // Covers up to 10b KAS
     let mut top_scripts_heap: BinaryHeap<Reverse<(u64, Vec<u8>)>> = BinaryHeap::with_capacity(cli_args.top_scripts_count as usize);
 
-    for (script, amount) in read_script_amounts(run.clone(), network_id, cli_args.ignore_dust_amounts, db_dir)? {
+    for (script, amount) in read_script_amounts(run.clone(), network_id, cli_args.ignore_dust_amounts, db_path)? {
         let amount_kas = amount / SOMPI_PER_KASPA;
         let tier = ((amount_kas * 10) as f64).log10().floor() as usize;
         tiers[tier].0 += 1;
@@ -190,7 +214,7 @@ fn read_script_amounts(
     run: Arc<AtomicBool>,
     network_id: NetworkId,
     ignore_dust_amounts: u64,
-    db_dir: PathBuf,
+    db_path: PathBuf,
 ) -> Result<HashMap<ScriptPublicKey, u64>, Box<dyn Error>> {
     let mut opts = rocksdb::Options::default();
     opts.create_if_missing(false);
@@ -198,8 +222,8 @@ fn read_script_amounts(
     opts.set_allow_mmap_reads(true);
     let guard = kaspa_utils::fd_budget::acquire_guard(128).unwrap();
 
-    info!("Opening database {}", db_dir.display());
-    let db = Arc::new(DB::new(<DBWithThreadMode<MultiThreaded>>::open_for_read_only(&opts, db_dir.to_str().unwrap(), false)?, guard));
+    info!("Reading UTXOs from VirtualStore");
+    let db = Arc::new(DB::new(<DBWithThreadMode<MultiThreaded>>::open_for_read_only(&opts, db_path.to_str().unwrap(), false)?, guard));
     let config = Arc::new(ConfigBuilder::new(network_id.into()).adjust_perf_params_to_consensus_params().build());
     let storage = ConsensusStorage::new(db, config);
 

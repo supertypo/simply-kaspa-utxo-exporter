@@ -9,13 +9,13 @@ pub struct CliArgs {
     pub network: String,
     #[clap(short, long, default_value = "~/.rusty-kaspa", help = "Kaspad data base directory")]
     pub base_dir: String,
-    #[clap(long, default_value = "consensus-004", help = "Kaspad consensus subdir")]
-    pub consensus_dir: String,
+    #[clap(long, help = "Kaspad consensus subdir, leave empty to auto-detect")]
+    pub consensus_dir: Option<String>,
     #[clap(short, long, default_value = "postgres://postgres:postgres@localhost:5432/postgres", help = "PostgreSQL url(s)")]
     pub database_url: Vec<String>,
     #[clap(short, long, default_value = "60", help = "Interval between utxo set rescanning")]
     pub interval_minutes: u64,
-    #[clap(long, default_value = "10000", help = "Ignore utxos with amounts less than this (in sompi)")]
+    #[clap(long, default_value = "10000", help = "Ignore utxos with amounts less than this (in sompi/litra)")]
     pub ignore_dust_amounts: u64,
     #[clap(long, default_value = "1000", help = "Number of top scripts to index")]
     pub top_scripts_count: u64,

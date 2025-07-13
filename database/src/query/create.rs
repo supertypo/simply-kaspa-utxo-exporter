@@ -59,8 +59,7 @@ async fn table_exists(pool: &Pool<Postgres>, name: &str) -> Result<bool, Error> 
             "SELECT EXISTS (
                 SELECT 1
                 FROM information_schema.tables
-                WHERE table_schema = 'public'
-                AND table_name = '{name}'
+                WHERE table_name = '{name}'
             )",
         )
         .as_str(),
