@@ -13,24 +13,22 @@ use crate::query;
 #[derive(Clone)]
 pub struct KaspaDbClient {
     pool: Pool<Postgres>,
+    pub url_cleaned: String,
 }
 
 impl KaspaDbClient {
     pub async fn new(url: &str) -> Result<KaspaDbClient, Error> {
-        Self::new_with_args(url, 1).await
-    }
-
-    pub async fn new_with_args(url: &str, pool_size: u32) -> Result<KaspaDbClient, Error> {
-        let url_cleaned = Regex::new(r"(postgres://postgres:)[^@]+(@)").expect("Failed to parse url").replace(url, "$1$2");
+        let url_cleaned = Regex::new(r"(postgres://postgres:)[^@]+(@)").expect("Failed to parse url").replace(url, "$1***$2");
         debug!("Connecting to PostgreSQL {}", url_cleaned);
         let connect_opts = PgConnectOptions::from_str(url)?.log_slow_statements(LevelFilter::Warn, Duration::from_secs(60));
         let pool = PgPoolOptions::new()
             .acquire_timeout(Duration::from_secs(10))
-            .max_connections(pool_size)
+            .min_connections(0)
+            .max_connections(10)
             .connect_with(connect_opts)
             .await?;
         info!("Connected to PostgreSQL {}", url_cleaned);
-        Ok(KaspaDbClient { pool })
+        Ok(KaspaDbClient { pool, url_cleaned: url_cleaned.to_string() })
     }
 
     pub async fn close(&mut self) -> Result<(), Error> {

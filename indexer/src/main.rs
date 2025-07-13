@@ -50,6 +50,7 @@ async fn main() {
 
     let network_id = NetworkId::from_str(&cli_args.network).unwrap();
 
+    let mut dbs = vec![];
     let mut last_run_ms = 0;
     for url in cli_args.database_url.clone() {
         match KaspaDbClient::new(&url).await {
@@ -62,24 +63,25 @@ async fn main() {
                         panic!("Failed to empty tables for {url}: {e}")
                     };
                 }
-                if last_run_ms == 0 {
-                    match db.select_last_distribution_tier().await {
-                        Ok(v) => last_run_ms = v,
-                        Err(e) => panic!("Failed to read last run timestamp from {url}: {e}"),
-                    }
+                match db.select_last_distribution_tier().await {
+                    Ok(v) => last_run_ms = v,
+                    Err(e) => panic!("Failed to read last run timestamp from {url}: {e}"),
                 }
+                dbs.push(db);
             }
             Err(e) => panic!("Database connection to {url} FAILED: {e}"),
         }
     }
     info!("Fetched last successful run: {}", Utc.timestamp_millis_opt(last_run_ms).unwrap());
+    info!("Run interval is set to {} minutes", cli_args.interval_minutes);
 
+    let run_interval = TimeDelta::minutes(cli_args.interval_minutes as i64);
     while run.load(Ordering::Relaxed) {
         let start_time = Utc::now().with_nanosecond(0).unwrap();
         let start_time_ms = start_time.timestamp_millis();
         let last_run = DateTime::from_timestamp_millis(last_run_ms).unwrap();
         let last_run_delta = start_time.signed_duration_since(last_run);
-        if last_run_delta >= TimeDelta::minutes(cli_args.interval_minutes as i64) {
+        if last_run_delta >= run_interval {
             info!("Reading tiers and top scripts, time since last run: {}", format_duration(last_run_delta.to_std().unwrap()));
             let db_path = match get_db_path(cli_args.base_dir.clone(), cli_args.consensus_dir.clone(), network_id) {
                 Ok(db_path) => db_path,
@@ -90,7 +92,7 @@ async fn main() {
             };
             match read_tiers_and_top_scripts(cli_args.clone(), run.clone(), network_id, db_path.clone(), start_time_ms) {
                 Ok((tiers, top_scripts)) => {
-                    commit_to_db_with_retry(cli_args.clone(), &tiers, &top_scripts).await;
+                    commit_to_db_with_retry(cli_args.db_retry_count, dbs.clone(), &tiers, &top_scripts).await;
                     last_run_ms = start_time_ms;
                     info!("Finished reading tiers and top scripts, waiting until next interval ({}m)", cli_args.interval_minutes);
                 }
@@ -128,24 +130,23 @@ fn get_db_path(base_dir: String, consensus_dir: Option<String>, network_id: Netw
     }
 }
 
-async fn commit_to_db_with_retry(cli_args: CliArgs, tiers: &[DistributionTier], top_scripts: &[TopScript]) {
-    let max_tries = cli_args.db_retry_count + 1;
-    for url in cli_args.database_url.clone() {
-        debug!("Committing {} tiers and {} top scripts to {url}", tiers.len(), top_scripts.len());
+async fn commit_to_db_with_retry(db_retry_count: u16, dbs: Vec<KaspaDbClient>, tiers: &[DistributionTier], top_scripts: &[TopScript]) {
+    let max_tries = db_retry_count + 1;
+    for db in dbs {
+        debug!("Committing {} tiers and {} top scripts to {}", tiers.len(), top_scripts.len(), db.url_cleaned);
         for attempt in 1..=max_tries {
-            match commit_to_db(&url, tiers, top_scripts).await {
+            match commit_to_db(&db, tiers, top_scripts).await {
                 Ok(()) => {
-                    info!("Committed {} tiers and {} top scripts to {url}", tiers.len(), top_scripts.len());
+                    info!("Committed {} tiers and {} top scripts to {}", tiers.len(), top_scripts.len(), db.url_cleaned);
                     break;
                 }
-                Err(e) => error!("Failed to commit results to {url}, attempt {attempt}/{max_tries}: {e}"),
+                Err(e) => error!("Failed to commit results to {}, attempt {attempt}/{max_tries}: {e}", db.url_cleaned),
             }
         }
     }
 }
 
-async fn commit_to_db(url: &str, tiers: &[DistributionTier], top_scripts: &[TopScript]) -> Result<(), Box<dyn Error>> {
-    let db = KaspaDbClient::new(url).await?;
+async fn commit_to_db(db: &KaspaDbClient, tiers: &[DistributionTier], top_scripts: &[TopScript]) -> Result<(), Box<dyn Error>> {
     db.insert_distribution_tiers(tiers).await?;
     db.insert_top_scripts(top_scripts).await?;
     Ok(())
