@@ -30,7 +30,7 @@ Options:
   -i, --interval-minutes <INTERVAL_MINUTES>
           Interval between utxo set rescanning [default: 60]
       --ignore-dust-amounts <IGNORE_DUST_AMOUNTS>
-          Ignore utxos with amounts less than this (in sompi/litra) [default: 10000]
+          Ignore utxos with amounts less than this (in sompi) [default: 10000]
       --top-scripts-count <TOP_SCRIPTS_COUNT>
           Number of top scripts to index [default: 1000]
       --top-scripts-min-amount <TOP_SCRIPTS_MIN_AMOUNT>

@@ -15,7 +15,7 @@ pub struct CliArgs {
     pub database_url: Vec<String>,
     #[clap(short, long, default_value = "60", help = "Interval between utxo set rescanning (0 = oneshot")]
     pub interval_minutes: u64,
-    #[clap(long, default_value = "10000", help = "Ignore utxos with amounts less than this (in sompi/litra)")]
+    #[clap(long, default_value = "10000", help = "Ignore utxos with amounts less than this (in sompi)")]
     pub ignore_dust_amounts: u64,
     #[clap(long, default_value = "1000", help = "Number of top scripts to index (0 = unlimited)")]
     pub top_scripts_count: u64,
@@ -23,6 +23,8 @@ pub struct CliArgs {
     pub top_scripts_min_amount: u64,
     #[clap(long, help = "Also extract and store addresses from scripts")]
     pub extract_addresses: bool,
+    #[clap(long, help = "Disables conversion from sompi to KAS")]
+    pub amount_in_sompi: bool,
     #[clap(long, default_value = "120", help = "Interval between datadir read retries (in seconds)")]
     pub data_dir_retry_interval: u64,
     #[clap(long, default_value = "30", help = "Interval between db retries (in seconds)")]
