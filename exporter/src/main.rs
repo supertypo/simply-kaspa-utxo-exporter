@@ -85,7 +85,7 @@ async fn main() {
         let start_time_ms = start_time.timestamp_millis();
         let last_run = DateTime::from_timestamp_millis(last_run_ms).unwrap();
         let last_run_delta = start_time.signed_duration_since(last_run);
-        if last_run_delta >= run_interval {
+        if last_run_delta >= run_interval || run_interval.is_zero() {
             info!("Reading tiers and top scripts");
             if last_run_ms > 0 {
                 info!("Time since last run: {}", format_duration(last_run_delta.to_std().unwrap()));
@@ -121,6 +121,9 @@ async fn main() {
                     }
                 }
             };
+        }
+        if run_interval.is_zero() {
+            break;
         }
         sleep(Duration::from_secs(3)).await;
     }

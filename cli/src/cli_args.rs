@@ -13,7 +13,7 @@ pub struct CliArgs {
     pub consensus_dir: Option<String>,
     #[clap(short, long, default_value = "postgres://postgres:postgres@localhost:5432/postgres", help = "PostgreSQL url(s)")]
     pub database_url: Vec<String>,
-    #[clap(short, long, default_value = "60", help = "Interval between utxo set rescanning")]
+    #[clap(short, long, default_value = "60", help = "Interval between utxo set rescanning (0 = oneshot")]
     pub interval_minutes: u64,
     #[clap(long, default_value = "10000", help = "Ignore utxos with amounts less than this (in sompi/litra)")]
     pub ignore_dust_amounts: u64,
