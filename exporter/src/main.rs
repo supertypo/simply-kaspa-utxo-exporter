@@ -308,9 +308,10 @@ fn read_script_amounts(
         }
     }
     info!(
-        "Done processing {count} UTXOs, total amount {} (dust: {dust_count}/{}), time used: {}",
+        "Done processing {count} UTXOs, total amount {} (dust: {dust_count}/{}, scripts: {}), time used: {}",
         total_amount / SOMPI_PER_KASPA,
         dust_total_amount / SOMPI_PER_KASPA,
+        script_amount.len(),
         format_duration(Duration::from_secs(start_time.elapsed().as_secs()))
     );
     Ok(script_amount)
