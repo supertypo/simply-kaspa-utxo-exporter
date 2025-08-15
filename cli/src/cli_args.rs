@@ -17,7 +17,7 @@ pub struct CliArgs {
     pub interval_minutes: u64,
     #[clap(long, default_value = "10000", help = "Ignore utxos with amounts less than this (in sompi/litra)")]
     pub ignore_dust_amounts: u64,
-    #[clap(long, default_value = "1000", help = "Number of top scripts to index")]
+    #[clap(long, default_value = "1000", help = "Number of top scripts to index (0 = unlimited)")]
     pub top_scripts_count: u64,
     #[clap(long, default_value = "100000", help = "The minimum balance to be considered for top-n list")]
     pub top_scripts_min_amount: u64,

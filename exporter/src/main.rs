@@ -195,7 +195,10 @@ fn read_tiers_and_top_scripts(
     start_time_ms: i64,
 ) -> Result<(Vec<DistributionTier>, Vec<TopScript>), Box<dyn Error>> {
     let mut tiers = [(0u64, 0u64); 11]; // Covers up to 10b KAS
-    let mut top_scripts_heap: BinaryHeap<Reverse<(u64, Vec<u8>)>> = BinaryHeap::with_capacity(cli_args.top_scripts_count as usize);
+    let top_scripts_count = if cli_args.top_scripts_count == 0 { u64::MAX } else { cli_args.top_scripts_count };
+
+    let initial_heap = if cli_args.top_scripts_count == 0 { 1_000_000 } else { cli_args.top_scripts_count };
+    let mut top_scripts_heap: BinaryHeap<Reverse<(u64, Vec<u8>)>> = BinaryHeap::with_capacity(initial_heap as usize);
 
     for (script, amount) in read_script_amounts(run.clone(), network_id, cli_args.ignore_dust_amounts, db_path)? {
         let amount_kas = amount / SOMPI_PER_KASPA;
@@ -204,7 +207,7 @@ fn read_tiers_and_top_scripts(
         tiers[tier].1 += amount;
 
         if amount_kas > cli_args.top_scripts_min_amount {
-            if top_scripts_heap.len() < cli_args.top_scripts_count as usize {
+            if top_scripts_heap.len() < top_scripts_count as usize {
                 top_scripts_heap.push(Reverse((amount, script.script().to_vec())));
             } else if amount > top_scripts_heap.peek().unwrap().0 .0 {
                 top_scripts_heap.pop();
