@@ -22,19 +22,29 @@ pub async fn insert_distribution_tiers(distribution_tiers: &[DistributionTier], 
 
 pub async fn insert_top_scripts(top_scripts: &[TopScript], pool: &Pool<Postgres>) -> Result<u64, Error> {
     const COLS: usize = 5;
-    let sql = format!(
-        "INSERT INTO top_scripts (timestamp, rank, script_public_key, script_public_key_address, amount) VALUES {} ON CONFLICT DO NOTHING",
-        generate_placeholders(top_scripts.len(), COLS)
-    );
-    let mut query = sqlx::query(&sql);
-    for ts in top_scripts {
-        query = query.bind(ts.timestamp);
-        query = query.bind(ts.rank);
-        query = query.bind(&ts.script_public_key);
-        query = query.bind(&ts.script_public_key_address);
-        query = query.bind(ts.amount);
+    const BATCH_SIZE: usize = 2_000;
+
+    let mut total_rows = 0u64;
+    let mut tx = pool.begin().await?;
+
+    for top_scripts_chunk in top_scripts.chunks(BATCH_SIZE) {
+        let sql = format!(
+            "INSERT INTO top_scripts (timestamp, rank, script_public_key, script_public_key_address, amount)
+             VALUES {} ON CONFLICT DO NOTHING",
+            generate_placeholders(top_scripts_chunk.len(), COLS)
+        );
+        let mut query = sqlx::query(&sql);
+        for ts in top_scripts_chunk {
+            query = query.bind(ts.timestamp);
+            query = query.bind(ts.rank);
+            query = query.bind(&ts.script_public_key);
+            query = query.bind(&ts.script_public_key_address);
+            query = query.bind(ts.amount);
+        }
+        total_rows += query.execute(&mut *tx).await?.rows_affected();
     }
-    Ok(query.execute(pool).await?.rows_affected())
+    tx.commit().await?;
+    Ok(total_rows)
 }
 
 fn generate_placeholders(rows: usize, columns: usize) -> String {

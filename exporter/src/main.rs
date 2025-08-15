@@ -251,7 +251,7 @@ fn read_tiers_and_top_scripts(
                     .then(|| ScriptPublicKey::from_vec(0, spk))
                     .map(|spk| extract_script_pub_key_address(&spk, prefix).unwrap())
                     .map(|a| a.payload_to_string()),
-                amount: if cli_args.amount_in_sompi { amount } else {amount_kas } as i64,
+                amount: if cli_args.amount_in_sompi { amount } else { amount_kas } as i64,
             }
         })
         .collect();
