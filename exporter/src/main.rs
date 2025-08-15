@@ -243,7 +243,7 @@ fn read_tiers_and_top_scripts(
                 info!("Top {} address: {address}, total: {amount_kas} KAS", idx + 1);
             }
             TopScript {
-                rank: idx as i16,
+                rank: idx as i32,
                 timestamp: start_time_ms,
                 script_public_key: spk.clone(),
                 script_public_key_address: cli_args

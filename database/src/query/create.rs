@@ -41,7 +41,7 @@ async fn create_top_scripts(pool: &Pool<Postgres>) -> Result<(), Error> {
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS top_scripts (
                 timestamp BIGINT,
-                rank SMALLINT,
+                rank INT,
                 script_public_key BYTEA,
                 script_public_key_address VARCHAR,
                 amount BIGINT,

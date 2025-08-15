@@ -1,7 +1,7 @@
 #[derive(Eq, PartialEq, Hash)]
 pub struct TopScript {
     pub timestamp: i64,
-    pub rank: i16,
+    pub rank: i32,
     pub script_public_key: Vec<u8>,
     pub script_public_key_address: Option<String>,
     pub amount: i64,
