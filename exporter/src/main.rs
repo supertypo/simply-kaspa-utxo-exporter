@@ -206,7 +206,7 @@ fn read_tiers_and_top_scripts(
         tiers[tier].0 += 1;
         tiers[tier].1 += amount;
 
-        if amount_kas > cli_args.top_scripts_min_amount {
+        if amount_kas >= cli_args.top_scripts_min_amount {
             if top_scripts_heap.len() < top_scripts_count as usize {
                 top_scripts_heap.push(Reverse((amount, script.script().to_vec())));
             } else if amount > top_scripts_heap.peek().unwrap().0 .0 {
