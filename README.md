@@ -28,19 +28,23 @@ Options:
   -d, --database-url <DATABASE_URL>
           PostgreSQL url(s) [default: postgres://postgres:postgres@localhost:5432/postgres]
   -i, --interval-minutes <INTERVAL_MINUTES>
-          Interval between utxo set rescanning [default: 60]
+          Interval between utxo set rescanning (0 = oneshot) [default: 60]
       --ignore-dust-amounts <IGNORE_DUST_AMOUNTS>
           Ignore utxos with amounts less than this (in sompi) [default: 10000]
       --top-scripts-count <TOP_SCRIPTS_COUNT>
-          Number of top scripts to index [default: 1000]
+          Number of top scripts to index (0 = unlimited) [default: 1000]
       --top-scripts-min-amount <TOP_SCRIPTS_MIN_AMOUNT>
           The minimum balance to be considered for top-n list [default: 100000]
+      --extract-addresses
+          Also extract and store addresses from scripts
+      --amount-in-sompi
+          Disables conversion from sompi to KAS
       --data-dir-retry-interval <DATA_DIR_RETRY_INTERVAL>
           Interval between datadir read retries (in seconds) [default: 120]
       --db-retry-interval <DB_RETRY_INTERVAL>
           Interval between db retries (in seconds) [default: 30]
       --db-retry-count <DB_RETRY_COUNT>
-          How many times to retry commit to db before continuing [default: 20]
+          How many times to retry commit to db before moving on [default: 20]
   -c, --initialize-db
           Empties the tables. Use with care
   -l, --log-level <LOG_LEVEL>
