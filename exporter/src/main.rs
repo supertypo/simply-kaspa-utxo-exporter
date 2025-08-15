@@ -297,9 +297,10 @@ fn read_script_amounts(
         }
         if count % 1_000_000 == 0 {
             info!(
-                "Processed {count} UTXOs, total amount {} KAS (dust: {dust_count}/{})",
+                "Processed {count} UTXOs, total amount {} KAS (dust: {dust_count}/{}, scripts: {})",
                 total_amount / SOMPI_PER_KASPA,
                 dust_total_amount / SOMPI_PER_KASPA,
+                script_amount.len()
             );
         }
         if !run.load(Ordering::Relaxed) {
