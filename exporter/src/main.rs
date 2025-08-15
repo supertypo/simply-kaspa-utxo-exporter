@@ -64,7 +64,12 @@ async fn main() {
                     };
                 }
                 match db.select_last_distribution_tier().await {
-                    Ok(v) => last_run_ms = v,
+                    Ok(v) => {
+                        if let Some(ms) = v {
+                            info!("Fetched last successful run: {}", Utc.timestamp_millis_opt(ms).unwrap());
+                            last_run_ms = ms;
+                        }
+                    }
                     Err(e) => panic!("Failed to read last run timestamp from {url}: {e}"),
                 }
                 dbs.push(db);
@@ -72,7 +77,6 @@ async fn main() {
             Err(e) => panic!("Database connection to {url} FAILED: {e}"),
         }
     }
-    info!("Fetched last successful run: {}", Utc.timestamp_millis_opt(last_run_ms).unwrap());
     info!("Run interval is set to {} minutes", cli_args.interval_minutes);
 
     let run_interval = TimeDelta::minutes(cli_args.interval_minutes as i64);
@@ -82,7 +86,10 @@ async fn main() {
         let last_run = DateTime::from_timestamp_millis(last_run_ms).unwrap();
         let last_run_delta = start_time.signed_duration_since(last_run);
         if last_run_delta >= run_interval {
-            info!("Reading tiers and top scripts, time since last run: {}", format_duration(last_run_delta.to_std().unwrap()));
+            info!("Reading tiers and top scripts");
+            if last_run_ms > 0 {
+                info!("Time since last run: {}", format_duration(last_run_delta.to_std().unwrap()));
+            }
             let db_path = match get_db_path(cli_args.base_dir.clone(), cli_args.consensus_dir.clone(), network_id) {
                 Ok(db_path) => db_path,
                 Err(e) => {

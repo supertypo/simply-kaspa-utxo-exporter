@@ -52,7 +52,7 @@ impl KaspaDbClient {
         query::upsert::upsert_var(key, value, &self.pool).await
     }
 
-    pub async fn select_last_distribution_tier(&self) -> Result<i64, Error> {
+    pub async fn select_last_distribution_tier(&self) -> Result<Option<i64>, Error> {
         query::select::select_last_distribution_tier(&self.pool).await
     }
 
