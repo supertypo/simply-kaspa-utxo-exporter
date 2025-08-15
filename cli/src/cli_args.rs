@@ -21,6 +21,8 @@ pub struct CliArgs {
     pub top_scripts_count: u64,
     #[clap(long, default_value = "100000", help = "The minimum balance to be considered for top-n list")]
     pub top_scripts_min_amount: u64,
+    #[clap(long, help = "Also extract and store addresses from scripts")]
+    pub extract_addresses: bool,
     #[clap(long, default_value = "120", help = "Interval between datadir read retries (in seconds)")]
     pub data_dir_retry_interval: u64,
     #[clap(long, default_value = "30", help = "Interval between db retries (in seconds)")]

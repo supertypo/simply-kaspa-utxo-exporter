@@ -43,6 +43,7 @@ async fn create_top_scripts(pool: &Pool<Postgres>) -> Result<(), Error> {
                 timestamp BIGINT,
                 rank SMALLINT,
                 script_public_key BYTEA,
+                script_public_key_address VARCHAR,
                 amount BIGINT,
                 PRIMARY KEY (timestamp, rank)
             )",

@@ -21,9 +21,9 @@ pub async fn insert_distribution_tiers(distribution_tiers: &[DistributionTier], 
 }
 
 pub async fn insert_top_scripts(top_scripts: &[TopScript], pool: &Pool<Postgres>) -> Result<u64, Error> {
-    const COLS: usize = 4;
+    const COLS: usize = 5;
     let sql = format!(
-        "INSERT INTO top_scripts (timestamp, rank, script_public_key, amount) VALUES {} ON CONFLICT DO NOTHING",
+        "INSERT INTO top_scripts (timestamp, rank, script_public_key, script_public_key_address, amount) VALUES {} ON CONFLICT DO NOTHING",
         generate_placeholders(top_scripts.len(), COLS)
     );
     let mut query = sqlx::query(&sql);
@@ -31,6 +31,7 @@ pub async fn insert_top_scripts(top_scripts: &[TopScript], pool: &Pool<Postgres>
         query = query.bind(ts.timestamp);
         query = query.bind(ts.rank);
         query = query.bind(&ts.script_public_key);
+        query = query.bind(&ts.script_public_key_address);
         query = query.bind(ts.amount);
     }
     Ok(query.execute(pool).await?.rows_affected())

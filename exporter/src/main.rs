@@ -231,6 +231,7 @@ fn read_tiers_and_top_scripts(
         });
     }
 
+    let prefix = kaspa_addresses::Prefix::from(network_id);
     let top_scripts = top_scripts_heap
         .into_sorted_vec()
         .into_iter()
@@ -238,11 +239,20 @@ fn read_tiers_and_top_scripts(
         .map(|(idx, Reverse((amount, spk)))| {
             let amount_kas = amount / SOMPI_PER_KASPA;
             if idx < 10 {
-                let prefix = kaspa_addresses::Prefix::from(network_id);
                 let address = extract_script_pub_key_address(&ScriptPublicKey::from_vec(0, spk.clone()), prefix).unwrap();
                 info!("Top {} address: {address}, total: {amount_kas} KAS", idx + 1);
             }
-            TopScript { rank: idx as i16, timestamp: start_time_ms, script_public_key: spk, amount: amount_kas as i64 }
+            TopScript {
+                rank: idx as i16,
+                timestamp: start_time_ms,
+                script_public_key: spk.clone(),
+                script_public_key_address: cli_args
+                    .extract_addresses
+                    .then(|| ScriptPublicKey::from_vec(0, spk))
+                    .map(|spk| extract_script_pub_key_address(&spk, prefix).unwrap())
+                    .map(|a| a.payload_to_string()),
+                amount: amount_kas as i64,
+            }
         })
         .collect();
 
