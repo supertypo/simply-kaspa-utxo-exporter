@@ -21,6 +21,8 @@ pub struct CliArgs {
     pub top_scripts_count: u64,
     #[clap(long, default_value = "100000", help = "The minimum balance to be considered for top-n list")]
     pub top_scripts_min_amount: u64,
+    #[clap(long, default_value = "10000", help = "Minimum number of UTXOs a script must have to be included in script_utxo_counts")]
+    pub utxo_count_threshold: u64,
     #[clap(long, help = "Also extract and store addresses from scripts")]
     pub extract_addresses: bool,
     #[clap(long, help = "Disables conversion from sompi to KAS")]

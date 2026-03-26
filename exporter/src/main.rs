@@ -15,6 +15,7 @@ use simply_kaspa_utxo_exporter::signal::signal_handler::notify_on_signals;
 use simply_kaspa_utxo_exporter_cli::cli_args::CliArgs;
 use simply_kaspa_utxo_exporter_database::client::KaspaDbClient;
 use simply_kaspa_utxo_exporter_database::models::distribution_tier::DistributionTier;
+use simply_kaspa_utxo_exporter_database::models::script_utxo_count::ScriptUtxoCount;
 use simply_kaspa_utxo_exporter_database::models::top_script::TopScript;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
@@ -98,7 +99,7 @@ async fn main() {
                 }
             };
             match read_tiers_and_top_scripts(cli_args.clone(), run.clone(), network_id, db_path.clone(), start_time_ms) {
-                Ok((tiers, top_scripts)) => {
+                Ok((tiers, top_scripts, script_utxo_counts)) => {
                     commit_to_db_with_retry(
                         run.clone(),
                         cli_args.db_retry_count,
@@ -106,6 +107,7 @@ async fn main() {
                         dbs.clone(),
                         &tiers,
                         &top_scripts,
+                        &script_utxo_counts,
                     )
                     .await;
                     last_run_ms = start_time_ms;
@@ -157,13 +159,26 @@ async fn commit_to_db_with_retry(
     dbs: Vec<KaspaDbClient>,
     tiers: &[DistributionTier],
     top_scripts: &[TopScript],
+    script_utxo_counts: &[ScriptUtxoCount],
 ) {
     for db in dbs {
-        debug!("Committing {} tiers and {} top scripts to {}", tiers.len(), top_scripts.len(), db.url_cleaned);
+        debug!(
+            "Committing {} tiers, {} top scripts and {} script utxo counts to {}",
+            tiers.len(),
+            top_scripts.len(),
+            script_utxo_counts.len(),
+            db.url_cleaned
+        );
         for retry in 0..=db_retry_count {
-            match commit_to_db(&db, tiers, top_scripts).await {
+            match commit_to_db(&db, tiers, top_scripts, script_utxo_counts).await {
                 Ok(()) => {
-                    info!("Committed {} tiers and {} top scripts to {}", tiers.len(), top_scripts.len(), db.url_cleaned);
+                    info!(
+                        "Committed {} tiers, {} top scripts and {} script utxo counts to {}",
+                        tiers.len(),
+                        top_scripts.len(),
+                        script_utxo_counts.len(),
+                        db.url_cleaned
+                    );
                     break;
                 }
                 Err(e) => {
@@ -181,9 +196,15 @@ async fn commit_to_db_with_retry(
     }
 }
 
-async fn commit_to_db(db: &KaspaDbClient, tiers: &[DistributionTier], top_scripts: &[TopScript]) -> Result<(), Box<dyn Error>> {
+async fn commit_to_db(
+    db: &KaspaDbClient,
+    tiers: &[DistributionTier],
+    top_scripts: &[TopScript],
+    script_utxo_counts: &[ScriptUtxoCount],
+) -> Result<(), Box<dyn Error>> {
     db.insert_distribution_tiers(tiers).await?;
     db.insert_top_scripts(top_scripts).await?;
+    db.replace_script_utxo_counts(script_utxo_counts).await?;
     Ok(())
 }
 
@@ -193,14 +214,17 @@ fn read_tiers_and_top_scripts(
     network_id: NetworkId,
     db_path: PathBuf,
     start_time_ms: i64,
-) -> Result<(Vec<DistributionTier>, Vec<TopScript>), Box<dyn Error>> {
+) -> Result<(Vec<DistributionTier>, Vec<TopScript>, Vec<ScriptUtxoCount>), Box<dyn Error>> {
     let mut tiers = [(0u64, 0u64); 11]; // Covers up to 10b KAS
     let top_scripts_count = if cli_args.top_scripts_count == 0 { u64::MAX } else { cli_args.top_scripts_count };
 
     let initial_heap = if cli_args.top_scripts_count == 0 { 1_000_000 } else { cli_args.top_scripts_count };
     let mut top_scripts_heap: BinaryHeap<Reverse<(u64, Vec<u8>)>> = BinaryHeap::with_capacity(initial_heap as usize);
 
-    for (script, amount) in read_script_amounts(run.clone(), network_id, cli_args.ignore_dust_amounts, db_path)? {
+    let prefix = kaspa_addresses::Prefix::from(network_id);
+    let mut script_utxo_counts = vec![];
+
+    for (script, (amount, utxo_count)) in read_script_amounts(run.clone(), network_id, cli_args.ignore_dust_amounts, db_path)? {
         let amount_kas = amount / SOMPI_PER_KASPA;
         let tier = ((amount_kas * 10) as f64).log10().floor() as usize;
         tiers[tier].0 += 1;
@@ -213,6 +237,15 @@ fn read_tiers_and_top_scripts(
                 top_scripts_heap.pop();
                 top_scripts_heap.push(Reverse((amount, script.script().to_vec())));
             }
+        }
+        if utxo_count >= cli_args.utxo_count_threshold {
+            script_utxo_counts.push(ScriptUtxoCount {
+                script_public_key: script.script().to_vec(),
+                script_public_key_address: extract_script_pub_key_address(&script, prefix)
+                    .ok()
+                    .map(|a| a.payload_to_string()),
+                count: utxo_count as i64,
+            });
         }
         if !run.load(Ordering::Relaxed) {
             return Err(StoreError::DataInconsistency("Shutting down".to_string()).into());
@@ -231,7 +264,6 @@ fn read_tiers_and_top_scripts(
         });
     }
 
-    let prefix = kaspa_addresses::Prefix::from(network_id);
     let top_scripts = top_scripts_heap
         .into_sorted_vec()
         .into_iter()
@@ -256,7 +288,7 @@ fn read_tiers_and_top_scripts(
         })
         .collect();
 
-    Ok((distribution_tiers, top_scripts))
+    Ok((distribution_tiers, top_scripts, script_utxo_counts))
 }
 
 fn read_script_amounts(
@@ -264,7 +296,7 @@ fn read_script_amounts(
     network_id: NetworkId,
     ignore_dust_amounts: u64,
     db_path: PathBuf,
-) -> Result<HashMap<ScriptPublicKey, u64>, Box<dyn Error>> {
+) -> Result<HashMap<ScriptPublicKey, (u64, u64)>, Box<dyn Error>> {
     let mut opts = rocksdb::Options::default();
     opts.create_if_missing(false);
     opts.set_max_open_files(128);
@@ -293,7 +325,7 @@ fn read_script_amounts(
             dust_count += 1;
             dust_total_amount += amount;
         } else {
-            script_amount.entry(entry.script_public_key.clone()).and_modify(|e| *e += amount).or_insert(amount);
+            script_amount.entry(entry.script_public_key.clone()).and_modify(|(a, c)| { *a += amount; *c += 1; }).or_insert((amount, 1));
         }
         if count % 1_000_000 == 0 {
             info!(

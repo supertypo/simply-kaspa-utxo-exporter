@@ -3,12 +3,14 @@ use sqlx::{Error, Pool, Postgres};
 pub async fn empty_tables(pool: &Pool<Postgres>) -> Result<(), Error> {
     empty_table(pool, "distribution_tiers").await?;
     empty_table(pool, "top_scripts").await?;
+    empty_table(pool, "script_utxo_counts").await?;
     Ok(())
 }
 
 pub async fn create_tables(pool: &Pool<Postgres>) -> Result<(), Error> {
     create_distribution_tiers(pool).await?;
     create_top_scripts(pool).await?;
+    create_script_utxo_counts(pool).await?;
     Ok(())
 }
 
@@ -46,6 +48,22 @@ async fn create_top_scripts(pool: &Pool<Postgres>) -> Result<(), Error> {
                 script_public_key_address VARCHAR,
                 amount BIGINT,
                 PRIMARY KEY (timestamp, rank)
+            )",
+        )
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
+
+async fn create_script_utxo_counts(pool: &Pool<Postgres>) -> Result<(), Error> {
+    if !table_exists(pool, "script_utxo_counts").await? {
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS script_utxo_counts (
+                script_public_key BYTEA,
+                script_public_key_address VARCHAR,
+                count BIGINT,
+                PRIMARY KEY (script_public_key)
             )",
         )
         .execute(pool)

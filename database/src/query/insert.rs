@@ -47,6 +47,6 @@ pub async fn insert_top_scripts(top_scripts: &[TopScript], pool: &Pool<Postgres>
     Ok(total_rows)
 }
 
-fn generate_placeholders(rows: usize, columns: usize) -> String {
+pub fn generate_placeholders(rows: usize, columns: usize) -> String {
     (0..rows).map(|i| format!("({})", (1..=columns).map(|c| format!("${}", c + i * columns)).join(", "))).join(", ")
 }
