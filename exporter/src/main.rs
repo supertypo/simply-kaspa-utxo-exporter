@@ -241,9 +241,10 @@ fn read_tiers_and_top_scripts(
         if utxo_count >= cli_args.utxo_count_threshold {
             script_utxo_counts.push(ScriptUtxoCount {
                 script_public_key: script.script().to_vec(),
-                script_public_key_address: extract_script_pub_key_address(&script, prefix)
-                    .ok()
-                    .map(|a| a.payload_to_string()),
+                script_public_key_address: cli_args
+                    .extract_addresses
+                    .then(|| extract_script_pub_key_address(&script, prefix).ok().map(|a| a.payload_to_string()))
+                    .flatten(),
                 count: utxo_count as i64,
             });
         }
@@ -325,7 +326,13 @@ fn read_script_amounts(
             dust_count += 1;
             dust_total_amount += amount;
         } else {
-            script_amount.entry(entry.script_public_key.clone()).and_modify(|(a, c)| { *a += amount; *c += 1; }).or_insert((amount, 1));
+            script_amount
+                .entry(entry.script_public_key.clone())
+                .and_modify(|(a, c)| {
+                    *a += amount;
+                    *c += 1;
+                })
+                .or_insert((amount, 1));
         }
         if count % 1_000_000 == 0 {
             info!(
