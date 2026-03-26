@@ -1,14 +1,14 @@
 ##
 # builder image
 ##
-FROM rust:1.83-alpine AS builder
+FROM rust:1.94.0-alpine AS builder
 
 ARG REPO_DIR=.
 
 RUN apk --no-cache add \
   musl-dev \
   g++ \
-  clang15-dev \
+  clang18-dev \
   linux-headers \
   openssl-dev \
   postgresql-dev \
@@ -32,8 +32,6 @@ RUN mkdir cli/src database/src exporter/src && \
     echo "fn main() {}" > exporter/src/main.rs
 
 RUN cargo fetch
-# Patch missing include in librocksdb-sys-0.16.0+8.10.0
-RUN sed -i '1i #include <cstdint>' $(find /usr/local/cargo/registry/src/ -path "*/librocksdb-sys-0.16.0+8.10.0/*/offpeak_time_info.h")
 RUN cargo build --release
 
 COPY "$REPO_DIR" .
